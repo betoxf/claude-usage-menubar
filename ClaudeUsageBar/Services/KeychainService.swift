@@ -11,13 +11,27 @@ final class KeychainService {
 
     private let serviceName = "com.claudeusagebar.credentials"
 
-    private init() {}
+    // Cache credentials to avoid slow Keychain lookups on every view render
+    private var cachedSessionKey: String?
+    private var cachedOrganizationId: String?
+    private var cacheLoaded = false
+
+    private init() {
+        loadCache()
+    }
+
+    private func loadCache() {
+        cachedSessionKey = retrieveFromKeychain(key: "sessionKey")
+        cachedOrganizationId = retrieveFromKeychain(key: "organizationId")
+        cacheLoaded = true
+    }
 
     // MARK: - Session Key
 
     var sessionKey: String? {
-        get { retrieve(key: "sessionKey") }
+        get { cachedSessionKey }
         set {
+            cachedSessionKey = newValue
             if let value = newValue {
                 save(key: "sessionKey", value: value)
             } else {
@@ -29,8 +43,9 @@ final class KeychainService {
     // MARK: - Organization ID
 
     var organizationId: String? {
-        get { retrieve(key: "organizationId") }
+        get { cachedOrganizationId }
         set {
+            cachedOrganizationId = newValue
             if let value = newValue {
                 save(key: "organizationId", value: value)
             } else {
@@ -61,7 +76,7 @@ final class KeychainService {
         }
     }
 
-    private func retrieve(key: String) -> String? {
+    private func retrieveFromKeychain(key: String) -> String? {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: serviceName,
@@ -99,6 +114,8 @@ final class KeychainService {
     }
 
     func clearAll() {
+        cachedSessionKey = nil
+        cachedOrganizationId = nil
         delete(key: "sessionKey")
         delete(key: "organizationId")
     }

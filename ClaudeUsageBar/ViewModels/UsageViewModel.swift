@@ -48,6 +48,8 @@ final class UsageViewModel: ObservableObject {
             usageData = data
             lastUpdated = Date()
             error = nil
+            // Notify that usage data changed so status bar can update
+            NotificationCenter.default.post(name: NSNotification.Name("UsageDataChanged"), object: nil)
         } catch let apiError as APIError {
             error = apiError.errorDescription
             print("API Error: \(apiError.errorDescription ?? "Unknown")")
