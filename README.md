@@ -8,14 +8,14 @@ A lightweight macOS menu bar app that displays your Claude.ai usage (5-hour roll
 ## Installation
 
 ### Download (Easiest)
-1. Download `ClaudeUsageBar.dmg` from [Releases](../../releases)
+1. Download `ClaudeUsageBar.dmg` from [Releases](https://github.com/betoxf/claude-usage-menubar/releases)
 2. Open the DMG and drag ClaudeUsageBar to Applications
 3. First launch: Right-click > Open (to bypass Gatekeeper)
 
 ### Build from Source
 ```bash
-git clone https://github.com/YOUR_USERNAME/ClaudeUsageBar.git
-cd ClaudeUsageBar
+git clone https://github.com/betoxf/claude-usage-menubar.git
+cd claude-usage-menubar
 xcodebuild -scheme ClaudeUsageBar -configuration Release build
 ```
 Or open `ClaudeUsageBar.xcodeproj` in Xcode and press Cmd+R.
