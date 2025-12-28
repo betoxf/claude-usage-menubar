@@ -2,16 +2,16 @@
 //  ClaudeUsageBarApp.swift
 //  ClaudeUsageBar
 //
-//  Created by Humberto Prado on 28/12/25.
-//
 
 import SwiftUI
 
 @main
 struct ClaudeUsageBarApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+
     var body: some Scene {
-        WindowGroup {
-            ContentView()
+        Settings {
+            SettingsView(viewModel: UsageViewModel.shared)
         }
     }
 }
