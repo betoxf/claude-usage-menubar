@@ -192,6 +192,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             iconItem.state = viewModel.showIcon ? .on : .off
             menu.addItem(iconItem)
 
+            // Launch at login
+            let launchItem = NSMenuItem(title: "Launch at Login", action: #selector(toggleLaunchAtLogin), keyEquivalent: "")
+            launchItem.target = self
+            launchItem.state = viewModel.launchAtStartup ? .on : .off
+            menu.addItem(launchItem)
+
             menu.addItem(NSMenuItem.separator())
 
             // Sign out
@@ -267,6 +273,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func toggleIcon() {
         viewModel.showIcon.toggle()
         NotificationCenter.default.post(name: NSNotification.Name("SettingsChanged"), object: nil)
+    }
+
+    @objc private func toggleLaunchAtLogin() {
+        viewModel.launchAtStartup.toggle()
+        rebuildMenu()
     }
 
     @objc private func signOut() {

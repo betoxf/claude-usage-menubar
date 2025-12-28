@@ -6,6 +6,7 @@
 import Foundation
 import Combine
 import SwiftUI
+import ServiceManagement
 
 @MainActor
 final class UsageViewModel: ObservableObject {
@@ -21,10 +22,32 @@ final class UsageViewModel: ObservableObject {
 
     // MARK: - Display Settings (persisted)
 
-    @AppStorage("launchAtStartup") var launchAtStartup: Bool = false
     @AppStorage("showIcon") var showIcon: Bool = true
     @AppStorage("showOnly5hr") var showOnly5hr: Bool = false
     @AppStorage("showOnlyWeekly") var showOnlyWeekly: Bool = false
+
+    // Launch at login using SMAppService (macOS 13+)
+    var launchAtStartup: Bool {
+        get {
+            if #available(macOS 13.0, *) {
+                return SMAppService.mainApp.status == .enabled
+            }
+            return false
+        }
+        set {
+            if #available(macOS 13.0, *) {
+                do {
+                    if newValue {
+                        try SMAppService.mainApp.register()
+                    } else {
+                        try SMAppService.mainApp.unregister()
+                    }
+                } catch {
+                    print("Failed to \(newValue ? "enable" : "disable") launch at login: \(error)")
+                }
+            }
+        }
+    }
 
     // MARK: - Private
 
