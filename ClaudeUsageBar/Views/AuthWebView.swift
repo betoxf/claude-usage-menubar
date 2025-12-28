@@ -11,7 +11,7 @@ struct AuthWindowView: View {
 
     @State private var sessionKey: String = ""
     @State private var organizationId: String = ""
-    @State private var showDisclosure: Bool = false
+    @State private var showDisclosure: Bool = true
 
     private let anthropicOrange = Color(red: 0.83, green: 0.53, blue: 0.30)
 
