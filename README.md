@@ -5,6 +5,12 @@ A lightweight macOS menu bar app that displays your Claude.ai usage (5-hour roll
 ![Menu Bar](https://img.shields.io/badge/macOS-Menu%20Bar-blue)
 ![Swift](https://img.shields.io/badge/Swift-5.9-orange)
 
+## Screenshots
+
+| Menu Bar | Setup |
+|----------|-------|
+| ![Running](images/runningscreen.png) | ![Setup](images/setupscreen.png) |
+
 ## Installation
 
 ### Download (Easiest)
