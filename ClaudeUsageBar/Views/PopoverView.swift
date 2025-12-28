@@ -64,70 +64,93 @@ struct PopoverView: View {
                         Spacer()
                     }
 
-                    // Open browser button
-                    Button(action: openBrowser) {
-                        Text("Open claude.ai")
-                            .font(.system(size: 10))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 5)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(anthropicOrange)
+                    if authStep == 1 {
+                        // Step 1: Sign in
+                        VStack(spacing: 10) {
+                            Text("1. Sign in to Claude")
+                                .font(.system(size: 10, weight: .medium))
+                                .frame(maxWidth: .infinity, alignment: .leading)
 
-                    Text("Beta: Auto Sign-in coming soon")
-                        .font(.system(size: 7))
-                        .foregroundColor(.secondary.opacity(0.6))
+                            Button(action: openBrowser) {
+                                Text("Open claude.ai")
+                                    .font(.system(size: 10))
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 5)
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .tint(anthropicOrange)
 
-                    Divider()
-
-                    // Credentials form
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Paste your credentials")
-                            .font(.system(size: 9))
-                            .foregroundColor(.secondary)
-
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Session Key")
+                            Text("Beta: Auto Sign-in coming soon")
                                 .font(.system(size: 7))
-                                .foregroundColor(.secondary)
-                            SecureField("sk-ant-sid01-...", text: $sessionKey)
-                                .textFieldStyle(.plain)
-                                .font(.system(size: 9))
-                                .padding(5)
-                                .background(RoundedRectangle(cornerRadius: 3).stroke(Color.secondary.opacity(0.3)))
-                        }
+                                .foregroundColor(.secondary.opacity(0.6))
 
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Organization ID")
-                                .font(.system(size: 7))
-                                .foregroundColor(.secondary)
-                            TextField("uuid from URL", text: $organizationId)
-                                .textFieldStyle(.plain)
-                                .font(.system(size: 9))
-                                .padding(5)
-                                .background(RoundedRectangle(cornerRadius: 3).stroke(Color.secondary.opacity(0.3)))
+                            Button(action: { authStep = 2 }) {
+                                Text("Next →")
+                                    .font(.system(size: 10))
+                                    .foregroundColor(anthropicOrange)
+                            }
+                            .buttonStyle(.plain)
                         }
+                    } else {
+                        // Step 2: Credentials
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("2. Copy your credentials")
+                                .font(.system(size: 10, weight: .medium))
 
-                        Button(action: {
-                            viewModel.saveCredentials(sessionKey: sessionKey, organizationId: organizationId)
-                        }) {
-                            Text("Done")
-                                .font(.system(size: 10))
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 4)
-                                .background(sessionKey.isEmpty || organizationId.isEmpty ? Color.secondary.opacity(0.3) : anthropicOrange)
-                                .foregroundColor(.white)
-                                .cornerRadius(4)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Session Key")
+                                    .font(.system(size: 8, weight: .medium))
+                                Text("DevTools → Network → Cookie: sessionKey=...")
+                                    .font(.system(size: 7))
+                                    .foregroundColor(.secondary)
+                                SecureField("sk-ant-sid01-...", text: $sessionKey)
+                                    .textFieldStyle(.plain)
+                                    .font(.system(size: 9))
+                                    .padding(5)
+                                    .background(RoundedRectangle(cornerRadius: 3).stroke(Color.secondary.opacity(0.3)))
+                            }
+
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Organization ID")
+                                    .font(.system(size: 8, weight: .medium))
+                                Text("URL: claude.ai/api/organizations/{this-id}/usage")
+                                    .font(.system(size: 7))
+                                    .foregroundColor(.secondary)
+                                TextField("uuid from URL", text: $organizationId)
+                                    .textFieldStyle(.plain)
+                                    .font(.system(size: 9))
+                                    .padding(5)
+                                    .background(RoundedRectangle(cornerRadius: 3).stroke(Color.secondary.opacity(0.3)))
+                            }
+
+                            HStack {
+                                Button(action: { authStep = 1 }) {
+                                    Text("← Back")
+                                        .font(.system(size: 9))
+                                        .foregroundColor(.secondary)
+                                }
+                                .buttonStyle(.plain)
+
+                                Spacer()
+
+                                Button(action: {
+                                    viewModel.saveCredentials(sessionKey: sessionKey, organizationId: organizationId)
+                                }) {
+                                    Text("Done")
+                                        .font(.system(size: 10, weight: .medium))
+                                        .foregroundColor(sessionKey.isEmpty || organizationId.isEmpty ? .secondary : anthropicOrange)
+                                }
+                                .buttonStyle(.plain)
+                                .disabled(sessionKey.isEmpty || organizationId.isEmpty)
+                            }
                         }
-                        .buttonStyle(.plain)
-                        .disabled(sessionKey.isEmpty || organizationId.isEmpty)
                     }
 
                     Divider()
 
                     // Disclosure
                     VStack(spacing: 4) {
-                        Button(action: { withAnimation(.easeInOut(duration: 0.15)) { showDisclosure.toggle() } }) {
+                        Button(action: { showDisclosure.toggle() }) {
                             HStack(spacing: 3) {
                                 Text("Not affiliated with Anthropic")
                                     .font(.system(size: 7))
@@ -149,7 +172,7 @@ struct PopoverView: View {
                     }
                 }
                 .padding(2)
-                .frame(width: 200)
+                .frame(width: 220)
             } else {
                 // 5-Hour
                 UsageRowMinimal(
