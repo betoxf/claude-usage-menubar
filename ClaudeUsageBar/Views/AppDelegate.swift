@@ -406,7 +406,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 struct CredentialsView: View {
     let onSave: (String, String) -> Void
 
-    @State private var step = 1
+    @State private var showManualEntry = false
+    @State private var showBrowserAuth = false
     @State private var sessionKey = ""
     @State private var organizationId = ""
 
@@ -424,88 +425,87 @@ struct CredentialsView: View {
             }
             .padding(.top, 8)
 
-            if step == 1 {
+            if !showManualEntry {
+                // Main sign-in options
                 Spacer()
-                VStack(spacing: 12) {
-                    Text("Step 1: Sign in to Claude")
+                VStack(spacing: 16) {
+                    Text("Sign in to Claude")
                         .font(.subheadline)
                         .fontWeight(.medium)
 
-                    Button(action: {
-                        if let url = URL(string: "https://claude.ai/settings/usage") {
-                            NSWorkspace.shared.open(url)
+                    // Auto sign-in button (recommended)
+                    Button(action: { showBrowserAuth = true }) {
+                        HStack {
+                            Image(systemName: "globe")
+                            Text("Sign in with Browser")
                         }
-                        step = 2
-                    }) {
-                        Text("Open Claude.ai")
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 10)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(anthropicOrange)
 
-                    Text("Skip →")
-                        .font(.caption)
+                    Text("Recommended - auto-extracts credentials")
+                        .font(.caption2)
                         .foregroundColor(.secondary)
-                        .onTapGesture { step = 2 }
+
+                    Divider()
+                        .padding(.vertical, 4)
+
+                    // Manual entry option
+                    Button(action: { showManualEntry = true }) {
+                        HStack {
+                            Image(systemName: "keyboard")
+                            Text("Manual Entry")
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                    }
+                    .buttonStyle(.bordered)
+
+                    Text("For advanced users")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
                 }
                 Spacer()
             } else {
+                // Manual entry form
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Step 2: Get credentials")
+                    Text("Manual Credential Entry")
                         .font(.subheadline)
                         .fontWeight(.medium)
 
-                    // Organization ID instructions
+                    // Organization ID
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Organization ID")
                             .font(.caption)
                             .fontWeight(.medium)
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text("In Safari: ⌥⌘I → Network tab")
-                                .font(.system(size: 10))
-                                .foregroundColor(.secondary)
-                            Text("Find \"usage\" request, copy UUID from URL:")
-                                .font(.system(size: 10))
-                                .foregroundColor(.secondary)
-                            Text("/organizations/{this-id}/usage")
-                                .font(.system(size: 9, design: .monospaced))
-                                .foregroundColor(anthropicOrange)
-                        }
-                        .padding(6)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(RoundedRectangle(cornerRadius: 4).fill(Color.secondary.opacity(0.08)))
-
+                        Text("From URL: claude.ai/chat → copy UUID after /organizations/")
+                            .font(.system(size: 9))
+                            .foregroundColor(.secondary)
                         TextField("263e9fcb-52b9-4372-8842-...", text: $organizationId)
                             .textFieldStyle(.roundedBorder)
                     }
 
-                    // Session Key instructions
+                    // Session Key
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Session Key")
                             .font(.caption)
                             .fontWeight(.medium)
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text("⌘F search \"sessionKey\" in cookies")
-                                .font(.system(size: 10))
-                                .foregroundColor(.secondary)
-                            Text("Copy value until the ;")
-                                .font(.system(size: 10))
-                                .foregroundColor(.secondary)
-                        }
-                        .padding(6)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(RoundedRectangle(cornerRadius: 4).fill(Color.secondary.opacity(0.08)))
-
+                        Text("From DevTools → Application → Cookies → sessionKey")
+                            .font(.system(size: 9))
+                            .foregroundColor(.secondary)
                         SecureField("sk-ant-sid01-...", text: $sessionKey)
                             .textFieldStyle(.roundedBorder)
                     }
 
                     HStack {
-                        Text("← Back")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .onTapGesture { step = 1 }
+                        Button("← Back") {
+                            showManualEntry = false
+                        }
+                        .buttonStyle(.plain)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
 
                         Spacer()
 
@@ -522,7 +522,7 @@ struct CredentialsView: View {
 
             Spacer()
 
-            Text("Not affiliated with Anthropic.\nCredentials stored locally in Keychain.")
+            Text("Not affiliated with Anthropic.\nCredentials stored locally (encrypted).")
                 .font(.caption2)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
@@ -530,5 +530,10 @@ struct CredentialsView: View {
         }
         .padding()
         .frame(width: 300, height: 400)
+        .sheet(isPresented: $showBrowserAuth) {
+            AuthWindowView { sk, org in
+                onSave(sk, org)
+            }
+        }
     }
 }

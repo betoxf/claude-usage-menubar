@@ -77,7 +77,7 @@ struct PopoverView: View {
             Divider()
 
             // Disclosure
-            Text("Not affiliated with Anthropic. Credentials stored locally in Keychain.")
+            Text("Not affiliated with Anthropic. Credentials stored locally (encrypted).")
                 .font(.system(size: 6))
                 .foregroundColor(.secondary.opacity(0.5))
                 .multilineTextAlignment(.center)
