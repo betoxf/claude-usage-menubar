@@ -187,6 +187,8 @@ struct ClaudeWebView: NSViewRepresentable {
         let onSessionExtracted: (String, String) -> Void
         let onStatusChange: (String) -> Void
         private var hasExtracted = false
+        private var extractionAttempts = 0
+        private let maxAttempts = 10
 
         init(onSessionExtracted: @escaping (String, String) -> Void, onStatusChange: @escaping (String) -> Void) {
             self.onSessionExtracted = onSessionExtracted
@@ -205,6 +207,7 @@ struct ClaudeWebView: NSViewRepresentable {
                 DispatchQueue.main.async {
                     self.onStatusChange("Signed in! Extracting credentials...")
                 }
+                extractionAttempts = 0
                 extractCredentials(from: webView)
             }
         }
@@ -214,7 +217,6 @@ struct ClaudeWebView: NSViewRepresentable {
                 print("Navigating to: \(url)")
 
                 // Extract org ID from URL if present
-                // URL format: https://claude.ai/chat/xxxx or https://claude.ai/project/org-id/...
                 if url.absoluteString.contains("claude.ai") && !url.absoluteString.contains("/login") {
                     DispatchQueue.main.async {
                         self.onStatusChange("Loading Claude...")
@@ -226,29 +228,99 @@ struct ClaudeWebView: NSViewRepresentable {
 
         private func extractCredentials(from webView: WKWebView) {
             guard !hasExtracted else { return }
+            extractionAttempts += 1
 
-            // Get cookies from WKWebView
+            DispatchQueue.main.async {
+                self.onStatusChange("Extracting... (attempt \(self.extractionAttempts))")
+            }
+
+            // Try to get both session and org via JavaScript (more reliable)
+            let script = """
+            (async function() {
+                try {
+                    // Get organization first
+                    const orgResponse = await fetch('/api/organizations', { credentials: 'include' });
+                    if (!orgResponse.ok) return { error: 'Not logged in' };
+                    const orgs = await orgResponse.json();
+                    const orgId = orgs[0]?.uuid || '';
+
+                    // Get cookies including sessionKey
+                    const cookies = document.cookie.split(';').reduce((acc, c) => {
+                        const [key, val] = c.trim().split('=');
+                        acc[key] = val;
+                        return acc;
+                    }, {});
+
+                    return {
+                        orgId: orgId,
+                        sessionKey: cookies['sessionKey'] || '',
+                        allCookies: Object.keys(cookies)
+                    };
+                } catch (e) {
+                    return { error: e.message };
+                }
+            })()
+            """
+
+            webView.evaluateJavaScript(script) { [weak self] result, error in
+                guard let self = self else { return }
+
+                if let dict = result as? [String: Any] {
+                    print("JS Result: \(dict)")
+
+                    if let errorMsg = dict["error"] as? String {
+                        print("Error: \(errorMsg)")
+                        self.retryOrFallback(webView: webView)
+                        return
+                    }
+
+                    let orgId = dict["orgId"] as? String ?? ""
+                    let sessionKey = dict["sessionKey"] as? String ?? ""
+
+                    if !orgId.isEmpty && !sessionKey.isEmpty {
+                        self.hasExtracted = true
+                        DispatchQueue.main.async {
+                            self.onSessionExtracted(sessionKey, orgId)
+                        }
+                        return
+                    } else if !orgId.isEmpty {
+                        // Got org but no session key - try cookie store
+                        self.tryGetSessionFromCookies(webView: webView, orgId: orgId)
+                        return
+                    }
+                }
+
+                self.retryOrFallback(webView: webView)
+            }
+        }
+
+        private func tryGetSessionFromCookies(webView: WKWebView, orgId: String) {
             webView.configuration.websiteDataStore.httpCookieStore.getAllCookies { [weak self] cookies in
                 guard let self = self else { return }
 
-                // Find sessionKey cookie
-                let sessionCookie = cookies.first { $0.name == "sessionKey" && $0.domain.contains("claude.ai") }
+                print("All cookies: \(cookies.map { "\($0.name): \($0.domain)" })")
 
-                if let sessionKey = sessionCookie?.value {
-                    print("Found session key: \(sessionKey.prefix(20))...")
-
+                if let sessionCookie = cookies.first(where: { $0.name == "sessionKey" }) {
+                    self.hasExtracted = true
                     DispatchQueue.main.async {
-                        self.onStatusChange("Extracting organization ID...")
+                        self.onSessionExtracted(sessionCookie.value, orgId)
                     }
-
-                    // Now fetch organization ID from API
-                    self.fetchOrganizationId(sessionKey: sessionKey, webView: webView)
                 } else {
-                    print("Session cookie not found yet")
-                    // Retry after a short delay
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                        self.extractCredentials(from: webView)
+                    DispatchQueue.main.async {
+                        self.onStatusChange("Got org ID but session cookie is HttpOnly. Use Manual entry.")
                     }
+                }
+            }
+        }
+
+        private func retryOrFallback(webView: WKWebView) {
+            if extractionAttempts < maxAttempts {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+                    self?.extractCredentials(from: webView)
+                }
+            } else {
+                DispatchQueue.main.async {
+                    self.onStatusChange("Could not extract automatically. Use Manual entry.")
                 }
             }
         }
