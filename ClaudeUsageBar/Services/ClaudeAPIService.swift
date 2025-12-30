@@ -48,8 +48,8 @@ final class ClaudeAPIService {
     // MARK: - Fetch Usage
 
     func fetchUsage() async throws -> UsageData {
-        guard let sessionKey = KeychainService.shared.sessionKey,
-              let orgId = KeychainService.shared.organizationId else {
+        guard let sessionKey = CredentialStorage.shared.sessionKey,
+              let orgId = CredentialStorage.shared.organizationId else {
             throw APIError.noCredentials
         }
 

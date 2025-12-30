@@ -115,12 +115,12 @@ final class UsageViewModel: ObservableObject {
     // MARK: - Credentials
 
     var hasCredentials: Bool {
-        KeychainService.shared.hasCredentials
+        CredentialStorage.shared.hasCredentials
     }
 
     func saveCredentials(sessionKey: String, organizationId: String) {
-        KeychainService.shared.sessionKey = sessionKey.trimmingCharacters(in: .whitespacesAndNewlines)
-        KeychainService.shared.organizationId = organizationId.trimmingCharacters(in: .whitespacesAndNewlines)
+        CredentialStorage.shared.sessionKey = sessionKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        CredentialStorage.shared.organizationId = organizationId.trimmingCharacters(in: .whitespacesAndNewlines)
 
         // Refresh after saving
         Task {
@@ -129,7 +129,7 @@ final class UsageViewModel: ObservableObject {
     }
 
     func clearCredentials() {
-        KeychainService.shared.clearAll()
+        CredentialStorage.shared.clearAll()
         usageData = .placeholder
         error = "Credentials cleared"
     }
